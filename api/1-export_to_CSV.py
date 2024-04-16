@@ -1,50 +1,54 @@
 #!/usr/bin/python3
-"""Retrieves and exports an employee's TODO list progress in CSV format"""
+"""Script to export data in the CSV format"""
+from requests import get
+from sys import argv
 import csv
-import requests
-import sys
 
 
-def get_employee_todos(employee_id):
-   """Retrieves the employee's todos from the API"""
-   url = f"https://jsonplaceholder.typicode.com/todos?userId={employee_id}"
-   response = requests.get(url)
-   todos = response.json()
-   return todos
+def information_employee(id_employee):
+    """Returns information about employees"""
+    employee_name = ""
+    task_data = []
+
+    url_users = 'https://jsonplaceholder.typicode.com/users'
+    url_todos = 'https://jsonplaceholder.typicode.com/todos'
+
+    response_one = get(url_users)
+    response_two = get(url_todos)
+
+    if response_one.status_code == 200:
+        response_json_usr = response_one.json()
+        response_json_tod = response_two.json()
+
+        for user in response_json_usr:
+            if user['id'] == id_employee:
+                employee_name = user['username']
+
+                for tod in response_json_tod:
+                    if tod['userId'] == id_employee:
+                        task_data.append(tod)
+
+        # Call the function to export data to CSV
+        export_to_csv(id_employee, employee_name, task_data)
 
 
-def get_employee_name(employee_id):
-   """Retrieves the employee's name from the API"""
-   url = f"https://jsonplaceholder.typicode.com/users/{employee_id}"
-   response = requests.get(url)
-   employee = response.json()
-   return f"{employee.get('name')}"
+def export_to_csv(user_id, employee_name, task_data):
+    """Exports the employee information to a CSV file"""
+    filename = f"{user_id}.csv"
 
+    with open(filename, mode='w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile, delimiter=',',
+                                quotechar='"', quoting=csv.QUOTE_ALL)
 
-def export_todo_progress(employee_id):
-   """Exports the employee's TODO list progress in CSV format"""
-   todos = get_employee_todos(employee_id)
-   employee_name = get_employee_name(employee_id)
-   filename = f"{employee_id}.csv"
-
-   with open(filename, mode='w', newline='') as csvfile:
-       csv_writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
-       for task in todos:
-           row = [
-               employee_id,
-               employee_name,
-               task.get("completed"),
-               task.get("title")
-           ]
-           csv_writer.writerow(row)
+        for task in task_data:
+            csv_writer.writerow(
+                [user_id, employee_name, task['completed'], task['title']])
 
 
 if __name__ == "__main__":
-   if len(sys.argv) < 2:
-       print("Usage: python3 1-export_to_CSV.py <employee_id>")
-   else:
-       try:
-           employee_id = int(sys.argv[1])
-           export_todo_progress(employee_id)
-       except ValueError:
-           print("Employee ID must be an integer")
+    if len(argv) != 2:
+        print("Usage: python script.py <employee_id>")
+        exit(1)
+
+    employee_id = int(argv[1])
+    information_employee(employee_id)

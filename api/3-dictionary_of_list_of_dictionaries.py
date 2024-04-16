@@ -1,47 +1,41 @@
 #!/usr/bin/python3
-"""Retrieves and exports all employees' TODO lists in JSON format"""
+"""
+This module uses Python to make requests to a REST API.
+q
+It fetches data about a specific employee's tasks
+and prints a summary of the tasks completed and the
+titles of the completed tasks.
+"""
 import json
 import requests
 
 
-def get_todos_by_user(user_id):
-    """Retrieves the TODO list for a given user ID"""
-    url = f"https://jsonplaceholder.typicode.com/todos?userId={user_id}"
-    response = requests.get(url)
-    todos = response.json()
-    return todos
+# Reuet data for users
+users = requests.get('https://jsonplaceholder.typicode.com/users').json()
 
+# Make an empty dictionary
+all_tasks = {}
 
-def get_username(user_id):
-    """Retrieves the username for a given user ID"""
-    url = f"https://jsonplaceholder.typicode.com/users/{user_id}"
-    response = requests.get(url)
-    user = response.json()
-    return user.get("username")
+# Loop over all users
+for user in users:
+    # get the user id and name
+    user_id = user['id']
+    user_name = user['username']
 
+    # Get the list
+    todo_list = requests.get(
+        f'https://jsonplaceholder.typicode.com/todos?userId={user_id}').json()
 
-def export_todo_data():
-    """Exports all employees' TODO lists in JSON format"""
-    todo_data = {}
+    # Format the task as indicated
+    task_list = [{'username': user_name, 'task': task.get(
+        'title'), 'completed': task.get('completed')} for task in todo_list]
 
-    for user_id in range(1, 11):  # Assuming user IDs range from 1 to 10
-        todos = get_todos_by_user(user_id)
-        username = get_username(user_id)
+    # Adds the task to the dictionary
+    all_tasks[user_id] = task_list
 
-        user_todos = []
-        for task in todos:
-            task_dict = {
-                "username": username,
-                "task": task.get("title"),
-                "completed": task.get("completed")
-            }
-            user_todos.append(task_dict)
+# Export using Json format
+with open('todo_all_employees.json', 'w') as jsonfile:
+    json.dump(all_tasks, jsonfile)
 
-        todo_data[str(user_id)] = user_todos
-
-    with open("todo_all_employees.json", mode='w') as jsonfile:
-        json.dump(todo_data, jsonfile)
-
-
-if __name__ == "__main__":
-    export_todo_data()
+if __name__ == '__main__':
+    pass
